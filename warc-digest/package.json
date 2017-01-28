@@ -1,0 +1,14 @@
+{
+  "name": "warc-digest",
+  "version": "1.0.0",
+  "description": "Calculates hash digests for HTTP response bodies in a WARC file",
+  "main": "warc-digest.js",
+  "bin": "./warc-digest",
+  "scripts": {},
+  "author": "Brian Kirkbride",
+  "license": "ISC",
+  "dependencies": {
+    "http-parser-js": "^0.4.4",
+    "warc": "^1.0.1"
+  }
+}

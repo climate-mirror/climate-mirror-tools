@@ -1,0 +1,14 @@
+#!/usr/bin/env node
+
+var wc = require('./warc-digest.js');
+wc.logResponseDigests({
+    src: process.stdin,
+    hash: 'sha256',
+    format: 'hex',
+    exclude: [
+        // for example:
+        // "\\?",
+        // "/$",
+    ]
+});
+// vim: syntax=javascript
