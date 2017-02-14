@@ -6,3 +6,4 @@ contributions!
 | Tool | Description | Language |
 | ---  | ---         | ----     |
 | [warc-digest](warc-digest) | Get SHA256 digests of HTTP response bodies in a WARC file | Javascript |
+| [website-size](https://github.com/mariomaric/website-size) | Estimate size of websites before mirroring | Shell |
