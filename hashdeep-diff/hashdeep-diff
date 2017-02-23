@@ -1,0 +1,104 @@
+#!/usr/bin/env perl
+
+use strict;
+use warnings;
+
+my $usage = "Usage: $0 [--strip=PREFIX_TO_REMOVE] [--prefix=PREFIX_TO_ADD] hashdeep1 [--strip=PREFIX_TO_REMOVE] [--prefix=PREFIX_TO_ADD] hashdeep2";
+
+my @opts = ();
+my @files = ();
+my %current_opts = ();
+while (@ARGV) {
+  my $arg = shift;
+  if ($arg eq '-h' or $arg eq '--help') {
+    die("$usage\n");
+  }
+  if ($arg =~ /^--(strip|prefix)(?:=(.+))?/) {
+    $current_opts{$1} = $2 || shift;
+  }
+  else {
+    push(@opts, \%current_opts);
+    push(@files, $arg);
+  }
+}
+
+die "$usage\n\nPlease provide at exactly two hashdeep audit files\n" unless @files == 2; # TODO support 2+
+die "$usage\n\nPlease provide at least two hashdeep audit files\n" unless @files > 1;
+
+my $tmpdir = $ENV{TMPDIR} || '/tmp';
+$tmpdir =~ s,/$,,;
+
+my @tmpfiles = ();
+my $i = 0;
+for my $f (@files) {
+  my $opts = shift @opts;
+  my $strip = $opts->{strip};
+  my $prefix = $opts->{prefix};
+  open my $fh, '<', $f or die("Failed to read to $f\n");
+  my $tmpfile = "$tmpdir/.hashdeepdiff.$$.$i";
+  open my $out, "|sort -t, -k 3 > $tmpfile" or die("Failed to write to $tmpfile\n");
+  while (<$fh>) {
+    next if /^[%#]/;
+    next if /\/\.(?:listing|message)$/;
+    chomp;
+    my ( $size, $md5, $sha256, @rest ) = split(/,/, $_);
+    my $file = join(',', @rest);
+    $file =~ s|^\./||;
+    $file =~ s|^\Q$strip\E|| if $strip;
+    $file = "$prefix$file" if $prefix;
+    print $out "$size,$sha256,$file\n";
+  }
+  close $fh;
+  close $out;
+  $i++;
+  push(@tmpfiles, $tmpfile);
+}
+
+my %f1 = ();
+my %f2 = ();
+my $diff_file = "$tmpdir/.hashdeepdiff.$$.diff";
+system("diff $tmpfiles[0] $tmpfiles[1] > $diff_file") or die("Failed diff");
+open my $fh, '<', $diff_file or die("Failed to read $diff_file\n");
+while (<$fh>) {
+  chomp;
+  next unless /^([<>]) (\d+),([0-9a-f]+),(.*)$/;
+  my $which = ($1 eq '<') ? \%f1 : \%f2;
+  $which->{$4} = [$2,$3];
+}
+close($fh);
+unlink($_) for @tmpfiles, $diff_file;
+print "[";
+my $first = 1;
+for my $f (sort keys %f1) {
+  my $v = $f1{$f};
+  $f =~ s/"/\\"/g;
+  print "," unless $first;
+  print qq(\n{"file":"$f");
+  if (my $other = delete $f2{$f}) {
+    print ',"type":"changed"';
+    if ($v->[0] != $other->[0]) {
+      print ',"size":['.$v->[0].','.$other->[0].']';
+    }
+    if ($v->[1] ne $other->[1]) {
+      print ',"sha256":["'.$v->[1].'","'.$other->[1].'"]';
+    }
+  }
+  else {
+    print ',"type":"removed"';
+    print ',"size":'.$v->[0];
+    print ',"sha256":"'.$v->[1].'"';
+  }
+  print "}";
+  $first = 0;
+}
+for my $f (sort keys %f2) {
+  my $v = $f2{$f};
+  $f =~ s/"/\\"/g;
+  print "," unless $first;
+  print qq(\n{"file":"$f");
+  print ',"type":"added"';
+  print ',"size":'.$v->[0];
+  print ',"sha256":"'.$v->[1].'"';
+  print "}";
+}
+print "\n]\n";
