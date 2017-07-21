@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-my $usage = "Usage: $0 [--strip=PREFIX_TO_REMOVE] [--prefix=PREFIX_TO_ADD] hashdeep1 [--strip=PREFIX_TO_REMOVE] [--prefix=PREFIX_TO_ADD] hashdeep2";
+my $usage = "Usage: $0 [--strip1=PREFIX_TO_REMOVE] [--prefix1=PREFIX_TO_ADD] hashdeep1 [--strip2=PREFIX_TO_REMOVE] [--prefix2=PREFIX_TO_ADD] hashdeep2";
 
 my @opts = ();
 my @files = ();
@@ -13,7 +13,7 @@ while (@ARGV) {
   if ($arg eq '-h' or $arg eq '--help') {
     die("$usage\n");
   }
-  if ($arg =~ /^--(strip|prefix)(?:=(.+))?/) {
+  if ($arg =~ /^--(strip|prefix)[0-9]*(?:=(.+))?/) {
     $current_opts{$1} = $2 || shift;
   }
   else {
@@ -32,8 +32,18 @@ my @tmpfiles = ();
 my $i = 0;
 for my $f (@files) {
   my $opts = shift @opts;
-  my $strip = $opts->{strip};
-  my $prefix = $opts->{prefix};
+  my $strip;
+  if (defined $opts->{strip}) {
+    $strip = $opts->{strip};
+  } else {
+    $strip = $opts->{"strip" . ($i+1)};
+  }
+  my $prefix;
+  if (defined $opts->{prefix}) {
+    $prefix = $opts->{prefix};
+  } else {
+    $prefix = $opts->{"prefix" . ($i+1)};
+  }
   open my $fh, '<', $f or die("Failed to read to $f\n");
   my $tmpfile = "$tmpdir/.hashdeepdiff.$$.$i";
   open my $out, "|sort -t, -k 3 > $tmpfile" or die("Failed to write to $tmpfile\n");
