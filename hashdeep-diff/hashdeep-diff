@@ -7,8 +7,8 @@ my $usage = "Usage: $0 [--strip=PREFIX_TO_REMOVE] [--prefix=PREFIX_TO_ADD] hashd
 
 my @opts = ();
 my @files = ();
-my %current_opts = ();
 while (@ARGV) {
+  my %current_opts = ();
   my $arg = shift;
   if ($arg eq '-h' or $arg eq '--help') {
     die("$usage\n");
