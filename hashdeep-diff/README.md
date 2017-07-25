@@ -14,3 +14,6 @@ jq < changes.json # pretty-printed and colorized details
 jq 'map(select(.file == "some/data/file.txt"))' < changes.json # differences for a single file
 jq -r 'map(select(.type != "added"))[].file' < changes.json # changed or removed filenames
 ```
+#### Contributers
+
+Thanks to [Christopher Rodgers](https://github.com/ctr) for catching a bug with command-line option parsing.
